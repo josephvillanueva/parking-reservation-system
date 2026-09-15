@@ -1,0 +1,6 @@
+# PostgreSQL settings for local Docker development.
+POSTGRES_HOST=postgres
+POSTGRES_PORT=5432
+POSTGRES_DB=change_me
+POSTGRES_USER=change_me
+POSTGRES_PASSWORD=replace_with_a_long_random_password
