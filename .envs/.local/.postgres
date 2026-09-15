@@ -1,7 +1,0 @@
-# PostgreSQL
-# ------------------------------------------------------------------------------
-POSTGRES_HOST=postgres
-POSTGRES_PORT=5432
-POSTGRES_DB=paymongo
-POSTGRES_USER=ghDJlHASLFBIRPDYomXNOcfDCxCWlBKv
-POSTGRES_PASSWORD=jNqVwM5CdZsYrRDIZv8Oxi6cDIcVx8Zpt4w40b0nqOBkukzVeKhmuR8v7rUpCXUv
