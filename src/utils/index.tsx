@@ -1,9 +1,8 @@
 import React, { useEffect } from "react"
 import { useRouter } from "next/router"
 import { useLazyQuery, useQuery } from "@apollo/client"
-import { GET_USER, ME } from "../queries"
+import { ME } from "../queries"
 import client from "../../apollo-client"
-import { getCookie } from "cookies-next"
 
 export const currencyFormat = (x: number) => {
   return x
@@ -22,11 +21,6 @@ export const toErrorMap = (errors: any[]) => {
 
 export function withAuth(gssp: any) {
   return async (context: any) => {
-    const userId = getCookie("userId", {
-      req: context.req,
-      res: context.res,
-    })?.toString()
-
     const gsspData = await gssp(context)
 
     if (gsspData.redirect) {
@@ -37,17 +31,14 @@ export function withAuth(gssp: any) {
       }
     }
 
-    if (userId) {
-      try {
-        const { error, data } = await client.query({
-          query: GET_USER,
-          variables: {
-            userId: parseInt(userId),
-          },
+    try {
+        const { data } = await client.query({
+          query: ME,
           fetchPolicy: "no-cache",
+          context: { headers: { cookie: context.req.headers.cookie || "" } },
         })
 
-        if (!data.getUser) {
+        if (!data.me) {
           return {
             redirect: {
               destination: "/login",
@@ -58,33 +49,21 @@ export function withAuth(gssp: any) {
         return {
           props: {
             ...gsspData.props,
-            me: data.getUser,
+            me: data.me,
           },
         }
-      } catch (_) {
+    } catch (_) {
         return {
           redirect: {
             destination: "/login",
           },
         }
-      }
-    } else {
-      return {
-        redirect: {
-          destination: "/login",
-        },
-      }
     }
   }
 }
 
 export function withoutAuth(gssp: any) {
   return async (context: any) => {
-    const userId = getCookie("userId", {
-      req: context.req,
-      res: context.res,
-    })?.toString()
-
     const gsspData = await gssp(context)
 
     if (gsspData.redirect) {
@@ -95,17 +74,14 @@ export function withoutAuth(gssp: any) {
       }
     }
 
-    if (userId) {
-      try {
-        const { error, data } = await client.query({
-          query: GET_USER,
-          variables: {
-            userId: parseInt(userId),
-          },
+    try {
+        const { data } = await client.query({
+          query: ME,
           fetchPolicy: "no-cache",
+          context: { headers: { cookie: context.req.headers.cookie || "" } },
         })
 
-        if (data.getUser) {
+        if (data.me) {
           return {
             redirect: {
               destination: "/",
@@ -116,11 +92,10 @@ export function withoutAuth(gssp: any) {
         return {
           props: {
             ...gsspData.props,
-            me: data.getUser,
+            me: data.me,
           },
         }
-      } catch (_) {}
-    }
+    } catch (_) {}
 
     return {
       props: {
@@ -129,3 +104,4 @@ export function withoutAuth(gssp: any) {
     }
   }
 }
+

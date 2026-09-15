@@ -12,7 +12,8 @@ import { useRouter, withRouter } from "next/router"
 import NextLink from "next/link"
 import AddParkingLotModal from "./AddParkingLotModal"
 import ParkModal from "./ParkModal"
-import { removeCookies } from "cookies-next"
+import { useMutation } from "@apollo/client"
+import { LOGOUT } from "../mutations"
 
 const NavBarContent: React.FC<any> = ({
   fetchParkingLots,
@@ -21,6 +22,7 @@ const NavBarContent: React.FC<any> = ({
 }) => {
   const { colorMode, toggleColorMode } = useColorMode()
   const router = useRouter()
+  const [logout] = useMutation(LOGOUT)
 
   const renderNavButtons = () => {
     const navButtons: React.ReactElement<any>[] = []
@@ -48,9 +50,9 @@ const NavBarContent: React.FC<any> = ({
     )
 
     if (me) {
-      const onLogout = () => {
-        removeCookies("userId")
-        router.push("/login")
+      const onLogout = async () => {
+        await logout()
+        await router.push("/login")
       }
 
       navButtons.push(
@@ -89,3 +91,4 @@ const NavBarContent: React.FC<any> = ({
 }
 
 export default withRouter(NavBarContent)
+

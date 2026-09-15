@@ -21,6 +21,7 @@ export const AppDataSource = new DataSource({
     ParkingLot,
     EntryPointToParkingSlotDistance,
   ],
-  synchronize: true,
+  synchronize: process.env.NODE_ENV !== "production",
   logging: process.env.NODE_ENV === "development",
 })
+
