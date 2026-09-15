@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 import {
   Arg,
+  Authorized,
   Ctx,
   Field,
   Mutation,
@@ -9,8 +10,9 @@ import {
   Resolver,
 } from "type-graphql"
 import { User } from "../../entities/User"
-import { IContext } from "../../utils/types"
-import { getCookie, setCookies } from "cookies-next"
+import type { IContext } from "../../utils/types"
+import { requireUser } from "../../utils/types"
+import { clearSessionCookie, hashPassword, setSessionCookie, verifyPassword } from "../../utils/security"
 
 @ObjectType()
 class FieldError {
@@ -38,11 +40,14 @@ export class UserResolver {
     @Arg("password") password: string,
     @Ctx() context: IContext
   ): Promise<User> {
+    if (await User.count() > 0) throw new Error("Registration is closed")
+    if (username.length < 3 || username.length > 64) throw new Error("Username must contain 3 to 64 characters")
+    if (password.length < 12 || password.length > 128) throw new Error("Password must contain 12 to 128 characters")
     const user = await User.create({
       firstName,
       lastName,
       username,
-      password,
+      password: await hashPassword(password),
     }).save()
 
     return user
@@ -67,7 +72,7 @@ export class UserResolver {
       }
     }
 
-    if (password !== user.password) {
+    if (!(await verifyPassword(password, user.password))) {
       return {
         errors: [
           {
@@ -78,32 +83,36 @@ export class UserResolver {
       }
     }
 
+    if (!user.password.startsWith("scrypt$")) {
+      user.password = await hashPassword(password)
+      await user.save()
+    }
+    setSessionCookie(context.res, user.userId)
     return { user }
   }
 
   @Mutation(() => Boolean)
+  @Authorized()
   async logout(@Ctx() context: IContext): Promise<boolean> {
+    clearSessionCookie(context.req, context.res)
     return true
   }
 
   @Query(() => User, { nullable: true })
   async me(@Ctx() context: IContext): Promise<User | null> {
-    let userId: any = getCookie("userId", {
-      req: context.req,
-      res: context.res,
-    })
-
-    if (!userId) {
-      return null
-    } else {
-      userId = parseInt(userId)
-    }
-
-    return await User.findOneOrFail({ where: { userId: parseInt(userId) } })
+    if (!context.userId) return null
+    return await User.findOne({ where: { userId: context.userId } })
   }
 
   @Query(() => User)
-  async getUser(@Arg("userId") userId: number): Promise<User> {
+  @Authorized()
+  async getUser(
+    @Arg("userId") userId: number,
+    @Ctx() context: IContext
+  ): Promise<User> {
+    const authenticatedUserId = requireUser(context)
+    if (authenticatedUserId !== userId) throw new Error("Access denied")
     return await User.findOneOrFail({ where: { userId } })
   }
 }
+

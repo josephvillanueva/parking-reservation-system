@@ -1,8 +1,7 @@
 /* eslint-disable no-empty */
 import "reflect-metadata"
 import { ApolloServer } from "apollo-server-micro"
-import Cors from "micro-cors"
-import type { PageConfig } from "next"
+import type { NextApiRequest, NextApiResponse, PageConfig } from "next"
 import { buildSchema } from "type-graphql"
 
 import { AppDataSource } from "../../../lib/serverless/utils/db"
@@ -10,8 +9,7 @@ import { ParkingLotResolver } from "../../../lib/serverless/graphql/resolvers/Pa
 import { VehicleResolver } from "../../../lib/serverless/graphql/resolvers/VehicleResolver"
 import { UserResolver } from "../../../lib/serverless/graphql/resolvers/UserResolver"
 import { send } from "micro"
-
-const cors = Cors()
+import { getSessionUserId } from "../../../lib/serverless/utils/security"
 
 // disable next js from handling this route
 export const config: PageConfig = {
@@ -23,6 +21,7 @@ export const config: PageConfig = {
 const apolloServer = new ApolloServer({
   schema: await buildSchema({
     resolvers: [UserResolver, ParkingLotResolver, VehicleResolver],
+    authChecker: ({ context }) => Boolean(context.userId),
   }),
   context: async ({ req, res }) => {
     try {
@@ -32,19 +31,28 @@ const apolloServer = new ApolloServer({
     return {
       req,
       res,
+      userId: getSessionUserId(req, res),
     }
   },
-  introspection: true,
+  introspection: process.env.NODE_ENV !== "production",
+  csrfPrevention: true,
 })
 
 await apolloServer.start()
 
-export default cors((req, res) => {
+export default function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method === "OPTIONS") {
-    send(res, 200, "ok")
+    res.setHeader("Allow", "POST, OPTIONS")
+    return send(res, 204, "")
+  }
+
+  if (req.method !== "POST") {
+    res.setHeader("Allow", "POST, OPTIONS")
+    return send(res, 405, "Method not allowed")
   }
 
   return apolloServer.createHandler({
     path: "/api/graphql",
   })(req, res)
-})
+}
+

@@ -2,6 +2,7 @@ import {
   Resolver,
   Mutation,
   Arg,
+  Authorized,
   Ctx,
   Query,
   Field,
@@ -16,7 +17,7 @@ import { ParkingLot } from "../../entities/ParkingLot"
 import { ParkingSlot } from "../../entities/ParkingSlot"
 import { Vehicle } from "../../entities/Vehicle"
 import { getHoursDiff, getRate } from "../../utils/rate"
-import { IContext } from "../../utils/types"
+import type { IContext } from "../../utils/types"
 import { ParkArgs, ParkingLotArgs, UnparkArgs } from "../args/ParkingLotArgs"
 
 @ObjectType()
@@ -34,6 +35,7 @@ export class ParkingLotResolver {
     Math.floor(Math.random() * (max - min + 1)) + min
 
   @Mutation(() => ParkingLot, { nullable: true })
+  @Authorized()
   async createParkingLot(
     @Arg("args") { sCount, mCount, lCount, entryPointsCount }: ParkingLotArgs,
     @Ctx() context: IContext
@@ -103,6 +105,7 @@ export class ParkingLotResolver {
   }
 
   @Mutation(() => ParkResponse)
+  @Authorized()
   async park(
     @Arg("args")
     { parkingLotId, entryPointId, plateNumber, size, checkInTime }: ParkArgs
@@ -253,6 +256,7 @@ export class ParkingLotResolver {
   }
 
   @Mutation(() => ParkResponse)
+  @Authorized()
   async unpark(
     @Arg("args")
     { parkingSlotId, checkOutTime }: UnparkArgs
@@ -314,6 +318,7 @@ export class ParkingLotResolver {
   }
 
   @Query(() => [ParkingLot], { nullable: true })
+  @Authorized()
   async getParkingLots(): Promise<ParkingLot[] | null> {
     return await ParkingLot.find({
       relations: {
@@ -330,6 +335,7 @@ export class ParkingLotResolver {
   }
 
   @Query(() => ParkingLot, { nullable: true })
+  @Authorized()
   async getParkingLotById(@Arg("id") id: number): Promise<ParkingLot | null> {
     const parkingLot = await ParkingLot.findOne({
       where: { id },
@@ -352,6 +358,7 @@ export class ParkingLotResolver {
   }
 
   @Query(() => [EntryPoint], { nullable: true })
+  @Authorized()
   async getEntryPointsById(
     @Arg("id") id: number
   ): Promise<EntryPoint[] | null> {
@@ -362,3 +369,4 @@ export class ParkingLotResolver {
     return entryPoints
   }
 }
+

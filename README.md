@@ -22,6 +22,10 @@ cp .envs/.local/.postgres.example .envs/.local/.postgres
 
 Replace the placeholder username and password in `.envs/.local/.postgres`. This file is ignored by Git and must never be committed.
 
+Copy `.env.local.example` to `.env.local` and replace every placeholder. `SESSION_SECRET` must be a unique random value containing at least 32 characters. Production credentials must be stored in the hosting provider's environment settings and must never be committed.
+
+Production database schema changes must be applied through reviewed migrations. Automatic schema synchronization is disabled in production.
+
 You can start editing the page by modifying `pages/index.tsx`. The page auto-updates as you edit the file.
 
 [API routes](https://nextjs.org/docs/api-routes/introduction) can be accessed on [http://localhost:3000/api/hello](http://localhost:3000/api/hello). This endpoint can be edited in `pages/api/hello.ts`.
@@ -42,3 +46,4 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/deployment) for more details.
+
