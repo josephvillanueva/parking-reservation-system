@@ -1,0 +1,31 @@
+version: 2.1
+jobs:
+  verify:
+    docker:
+      - image: cimg/node:16.20
+    resource_class: small
+    environment:
+      CI: "true"
+      NG_CLI_ANALYTICS: "false"
+    steps:
+      - checkout
+      - run:
+          name: "yarn install --frozen-lockfile"
+          working_directory: ~/project/.
+          command: "yarn install --frozen-lockfile"
+      - run:
+          name: "yarn test --ci --runInBand"
+          working_directory: ~/project/.
+          command: "yarn test --ci --runInBand"
+      - run:
+          name: "yarn lint"
+          working_directory: ~/project/.
+          command: "yarn lint"
+      - run:
+          name: "yarn build"
+          working_directory: ~/project/.
+          command: "yarn build"
+workflows:
+  verify:
+    jobs:
+      - verify
