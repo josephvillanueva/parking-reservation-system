@@ -20,7 +20,12 @@ jobs:
       - run:
           name: "yarn lint"
           working_directory: ~/project/.
-          command: "yarn lint"
+          command: |
+            if ! ls .eslintrc .eslintrc.json .eslintrc.js .eslintrc.cjs .eslintrc.yml .eslintrc.yaml 2>/dev/null | grep -q .; then
+              echo "Missing ESLint configuration; next lint would open an interactive setup prompt." >&2
+              exit 1
+            fi
+            yarn lint
       - run:
           name: "yarn build"
           working_directory: ~/project/.
