@@ -5,4 +5,6 @@ const CustomDateInput = forwardRef(({ value, onClick }: any, ref: any) => (
   <Input type="text" ref={ref} required value={value} onClick={onClick} />
 ))
 
+CustomDateInput.displayName = "CustomDateInput"
+
 export default CustomDateInput
