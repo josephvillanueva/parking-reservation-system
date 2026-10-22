@@ -1,0 +1,43 @@
+version: 2.1
+jobs:
+  verify:
+    docker:
+      - image: cimg/node:16.20
+    resource_class: small
+    environment:
+      CI: "true"
+      NG_CLI_ANALYTICS: "false"
+    steps:
+      - checkout
+      - run:
+          name: "yarn install --frozen-lockfile"
+          working_directory: ~/project/.
+          command: "yarn install --frozen-lockfile"
+      - run:
+          name: "yarn test --ci --runInBand"
+          working_directory: ~/project/.
+          command: "yarn test --ci --runInBand"
+      - run:
+          name: "yarn lint"
+          working_directory: ~/project/.
+          command: |
+            config_found=false
+            for config in .eslintrc .eslintrc.json .eslintrc.js .eslintrc.cjs .eslintrc.yml .eslintrc.yaml; do
+              if [ -f "$config" ]; then
+                config_found=true
+                break
+              fi
+            done
+            if [ "$config_found" != true ]; then
+              echo "Missing ESLint configuration; next lint would open an interactive setup prompt." >&2
+              exit 1
+            fi
+            yarn lint
+      - run:
+          name: "yarn build"
+          working_directory: ~/project/.
+          command: "yarn build"
+workflows:
+  verify:
+    jobs:
+      - verify
