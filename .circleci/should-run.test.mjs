@@ -1,5 +1,10 @@
-const fs=require('node:fs'), os=require('node:os'),path=require('node:path'),cp=require('node:child_process'),assert=require('node:assert/strict');
-const root=__dirname, gate=path.join(root,'should-run.sh'),bash=process.platform==='win32'?'C:/Program Files/Git/bin/bash.exe':'bash';
+import fs from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import cp from 'node:child_process';
+import assert from 'node:assert/strict';
+import {fileURLToPath} from 'node:url';
+const root=path.dirname(fileURLToPath(import.meta.url)), gate=path.join(root,'should-run.sh'),bash=process.platform==='win32'?'C:/Program Files/Git/bin/bash.exe':'bash';
 const posix=p=>p.replace(/\\/g,'/').replace(/^([A-Z]):/i,(_,d)=>'/'+d.toLowerCase());
 let count=0;
 function scenario(name,files,expected,env={},extra){const dir=fs.mkdtempSync(path.join(os.tmpdir(),'ci-gate-fixture-'));const git=(...args)=>cp.execFileSync('git',args,{cwd:dir,stdio:['ignore','pipe','pipe'],encoding:'utf8'}).trim();try{git('init','-b','main');git('config','user.name','CI fixture');git('config','user.email','ci@example.invalid');fs.writeFileSync(path.join(dir,'base.txt'),'base\n');fs.writeFileSync(path.join(dir,'code.js'),'baseline code\n');git('add','.');git('commit','-m','base');const base=git('rev-parse','HEAD');git('remote','add','origin',dir);for(const [file,text]of Object.entries(files)){fs.mkdirSync(path.dirname(path.join(dir,file)),{recursive:true});fs.writeFileSync(path.join(dir,file),text);}git('add','.');git('commit','-m','candidate');if(extra)extra({git,dir,fs});const mocks=path.join(dir,'mocks');fs.mkdirSync(mocks);fs.writeFileSync(path.join(mocks,'circleci-agent'),'#!/usr/bin/env bash\nprintf "HALTED\\n"\n');fs.chmodSync(path.join(mocks,'circleci-agent'),0o755);const result=cp.spawnSync(bash,['-c','PATH="$1:$PATH" bash "$2"','--',posix(mocks),posix(gate)],{cwd:dir,encoding:'utf8',env:{...process.env,CI_DEFAULT_BRANCH:'main',CIRCLE_BRANCH:'main',CI_BASE_REVISION:base,CI_FORCE_FULL:'false',CIRCLE_TAG:'',...env}});if(expected==='fail')assert.notEqual(result.status,0,name);else{assert.equal(result.status,0,name+': '+result.stderr);assert.equal(result.stdout.includes('HALTED'),expected==='skip',name+': '+result.stdout);}console.log('PASS '+name);count++;}finally{if(!path.resolve(dir).startsWith(path.resolve(os.tmpdir())+path.sep+'ci-gate-fixture-'))throw new Error('Unsafe fixture cleanup');fs.rmSync(dir,{recursive:true,force:true});}}
