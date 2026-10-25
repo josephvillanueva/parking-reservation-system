@@ -1,4 +1,9 @@
 version: 2.1
+
+parameters:
+  force_full:
+    type: boolean
+    default: false
 jobs:
   verify:
     docker:
@@ -9,6 +14,13 @@ jobs:
       NG_CLI_ANALYTICS: "false"
     steps:
       - checkout
+      - run:
+          name: Check whether full verification is needed
+          environment:
+            CI_DEFAULT_BRANCH: "main"
+            CI_BASE_REVISION: << pipeline.git.base_revision >>
+            CI_FORCE_FULL: << pipeline.parameters.force_full >>
+          command: bash .circleci/should-run.sh
       - run:
           name: "yarn install --frozen-lockfile"
           working_directory: ~/project/.
@@ -39,5 +51,10 @@ jobs:
           command: "yarn build"
 workflows:
   verify:
+    when:
+      or:
+        - << pipeline.parameters.force_full >>
+        - not:
+            equal: ["main", << pipeline.git.branch >>]
     jobs:
       - verify
